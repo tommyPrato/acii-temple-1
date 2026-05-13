@@ -1,0 +1,788 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+#include <chrono>
+#include <thread>
+#include <fstream>
+#include <cmath>
+#include <conio.h>
+using namespace std;
+class player;
+class nemico;
+void drawmach(vector<string>spritenem, vector<string>spriteplay, const nemico& mob, const player& gamer);
+
+void wait(int millisec)
+{
+	this_thread::sleep_for(chrono::milliseconds(millisec));
+}
+
+class maps  //class map that is the base for have different maps
+{
+private:
+	vector<string>map;
+	int mapnumber;
+public:
+	maps(vector<string>path,int mapnum)
+	{
+		map = path;
+		mapnumber = mapnum;
+	}
+	int getmapymax()
+	{
+		int mapymax = map.size();
+		return mapymax;
+	}
+	int getmapxmax() 
+	{
+		int mapxmax = map[0].size();
+		return mapxmax;
+	}
+	int getmapnum() { return mapnumber; }
+	char gettile(int y, int x) { return map[y][x]; }
+};
+
+class map0 :public maps
+{
+public:
+	map0() :maps
+	(
+		{
+			"########   #########",
+			"#                   ",
+			"#                   ",
+			"#        #         #",
+			"#        #         #",
+			"####################",
+		},0
+		)
+	{
+	}
+}; 
+
+class map1 :public maps
+{
+public:
+	map1() :maps
+	(
+		{
+			"####################",
+			"                   #",
+			"   #   #########   #",
+			"#  #####       #   #",
+			"#                  #",
+			"####################",
+		},1
+		)
+	{
+	}
+};
+
+class map2 :public maps
+{
+public:
+	map2() :maps
+	(
+		{
+			"####################",
+			"#                  #",
+			"#  #####   #####   #",
+			"#  #   #   #   #   #",
+			"#      #   #       #",
+			"########   #########",
+		},2
+		)
+	{
+	}
+};
+
+class player
+{
+private:
+	string name;
+	string classes;
+	int damage;
+	int speed;
+	int hp;
+	int crit;
+	int hp_max;
+	int posx;
+	int posy;
+	int map;
+	vector<string>sprite;
+	vector<string>sprite_attk;
+	vector<string>sprite_kill;
+
+public:
+	bool vivo()
+	{
+		bool vivi;
+		vivi = hp > 0;
+		return vivi;
+	}
+
+	void setName()
+	{
+		cout << "come ti chiami?" << endl;
+		getline(cin, name);
+	}
+
+	void choose_classe()
+	{
+		cout << "\033[2J\033[1;1H";
+		this_thread::sleep_for(chrono::milliseconds(300));
+		cout << "ciao " << name << endl;
+		this_thread::sleep_for(chrono::milliseconds(1000));
+		char scelta = 0;
+		while (!(scelta == '1' || scelta == '2' || scelta == '3')) {
+			cout << "scegli una classe" << endl;
+			cout << "1)tank 150 hp,30 speed,40 danno,25% crit" << endl;
+			cout << "2)blade master 75 hp,70 speed,30 danno,40% crit" << endl;
+			cout << "3)assassino 100 hp,90 speed,20 danno,50% crit" << endl;
+			scelta = _getch();
+			switch (scelta) {
+			case '1':
+				classes = "tank";
+				hp = 150;
+				damage = 40;
+				speed = 30;
+				crit = 25;
+				hp_max = hp;
+				break;
+			case '2':
+				classes = "blade master";
+				hp = 75;
+				damage = 30;
+				speed = 70;
+				crit = 40;
+				hp_max = hp;
+				break;
+			case '3':
+				classes = "assassino";
+				hp = 100;
+				damage = 20;
+				speed = 90;
+				crit = 50;
+				hp_max = hp;
+				break;
+			default:
+
+				cout << "scegli 1,2 o 3" << endl;
+
+			}
+		}
+		sprite =
+		{
+			R"(                             )",
+			R"(         |\_ ___ _/|         )",
+			R"(          \/     \/          )",
+			R"(           |     |           )",
+			R"(        __ |_____| __        )",
+			R"(       /  \_______/  /\      )",
+			R"(      /             /\ \__   )",
+			R"(     /             / |\_\_\  )",
+			R"(    /             /_/ ___|___)",
+			R"(   /             /||_  | | | )",
+			R"(  /             / ||/| | | | )",
+			R"( /             /| | /  | | | )",
+			R"(/_____________/ |_|/   | | | )"
+		};
+		sprite_attk =
+		{
+			R"(                        /|\  )",
+			R"(         |\_ ___ _/|   / | \ )",
+			R"(          \/     \/    | | | )",
+			R"(           |     |     | | | )",
+			R"(        __ |_____| __  | | | )",
+			R"(       /  \_______/  /\|_|_|_)",
+			R"(      /             /\ \_|_  )",
+			R"(     /             / |\_\_/  )",
+			R"(    /             /_/        )",
+			R"(   /             /||_        )",
+			R"(  /             / ||/|       )",
+			R"( /             /| | /        )",
+			R"(/_____________/ |_|/         )"
+		};
+		sprite_kill =
+		{
+			R"(                             )",
+			R"(         |\_ ___ _/|         )",
+			R"(          \/     \/          )",
+			R"(           |  x x|           )",
+			R"(        __ |_____| __        )",
+			R"(       /  \_______/  /\      )",
+			R"(      /             /\ \__   )",
+			R"(     /             / |\_\_\  )",
+			R"(    /             /_/ ___|___)",
+			R"(   /             /||_  | | | )",
+			R"(  /             / ||/| | | | )",
+			R"( /             /| | /  | | | )",
+			R"(/_____________/ |_|/   |_|_| )"
+		};
+	}
+
+	void attacchi(int& mob_vita)
+	{
+
+		wait(1500);
+		cout << "lo colpisci" << endl;
+
+
+		bool crittato = rand() % 100 < crit;
+		if (crittato)
+		{
+			cout << "colpo critico" << endl;
+			mob_vita -= damage * 2;
+		}
+		else
+			mob_vita -= damage;
+		if (mob_vita < 0)
+			mob_vita = 0;
+	}
+
+	void cura(int danno_nemico)
+	{
+		hp += 2 * danno_nemico;
+		if (hp > hp_max)
+		{
+			hp = hp_max;
+		}
+		cout << "hai " << hp << " hp" << endl;
+	}
+
+	void turno(int& mob_vita, int danno_nemico, const nemico& mob, const player& gamer);
+
+	void pos_play1(int mappaymax, int mappaxmax, vector<maps*>word)
+	{
+		posx = rand() % mappaxmax;
+		posy = rand() % mappaymax;
+		map = rand() % word.size();
+	}
+
+	string getclasse() const{ return classes; }
+	string getname() const{ return name; }
+	int& getposx() { return posx; }
+	int& getposy() { return posy; }
+	int getvita() const{ return hp; }
+	int& getvita() { return hp; }
+	int getspeed() const{ return speed; }
+	int& getmap() { return map; }
+	const vector<string>& getSprite() const { return sprite; }
+	const vector<string>& getSpriteAttk() const { return sprite_attk; }
+	const vector<string>& getSpriteKill() const { return sprite_kill; }
+};
+class nemico
+{
+private:
+	string classen;
+	int dannon;
+	int speedn;
+	int vitan;
+	int critn;
+	int posxn;
+	int posyn;
+	int wordn;
+	vector<string>sprite;
+	vector<string>sprite_attk;
+	vector<string>sprite_kill;
+public:
+	void attacca(int& play_vita) {
+		cout << "ti colpisce" << endl;
+		bool crittato = rand() % 100 < critn;
+		if (crittato)
+		{
+			cout << "colpo critico" << endl;
+			play_vita -= dannon * 2;
+		}
+		else
+			play_vita -= dannon;
+		if (play_vita < 0)
+			play_vita = 0;
+	}
+	nemico(string c, int v, int d, int s, int cr, vector<string>sprit, vector<string>sprit_attk, vector<string>sprit_kill)
+	{
+		classen = c;
+		vitan = v;
+		dannon = d;
+		speedn = s;
+		critn = cr;
+		sprite = sprit;
+		sprite_attk = sprit_attk;
+		sprite_kill = sprit_kill;
+
+	}
+
+	void pos_nemico1(vector<maps*>word)
+	{
+		wordn = rand() % word.size();
+		posxn = rand() % word[wordn]->getmapxmax();
+		posyn = rand() % word[wordn]->getmapymax();
+	}
+	string getclasse() const { return classen; }
+	int getdanno() const { return dannon; }
+	int getvita() const { return vitan; }
+	int& getvita() { return vitan; }
+	int getspeed() const { return speedn; }
+	int& getposnx() { return posxn; }
+	int& getposny() { return posyn; }
+	int getword() { return wordn; }
+	const vector<string>& getSprite() const { return sprite; }
+	const vector<string>& getSpriteAttk() const { return sprite_attk; }
+	const vector<string>& getSpriteKill() const { return sprite_kill; }
+};
+class orco : public nemico
+{
+public:
+	orco() : nemico
+	(
+		"orco",
+		120,
+		30,
+		25,
+		15,
+		{
+			R"(              __ _____ __    )",
+			R"(           __ \_| \ / |_/    )",
+			R"(           | |__| ___ |___   )",
+			R"(           | |.  \___// . \  )",
+			R"(           |_|__/  ___\___/  )",
+			R"(          /   \|. | -   - |  )",
+			R"(          \___/|. |  {*}  |  )",
+			R"(           | |  \ \  [|]  /  )",
+			R"(          / # \ |[=\_____/   )",
+			R"(         |  #  | /| /\ |\   )",
+			R"(         |  #  |(  |  |  )   )",
+			R"(          \___/ |  |  | _|   )",
+			R"(               [___|  |___]   )"
+		},
+		{
+			R"(          _   __ _____ __    )",
+			R"(       /   \  \_| \ / |_/    )",
+			R"(       \  | \___| ___ |___   )",
+			R"(        \_  / .  \___// . \  )",
+			R"(          \_\___/ .___\___/  )",
+			R"(         /   \ |. | -   - |  )",
+			R"(         \___/ |. |  {*}  |  )",
+			R"(            \ \ \ \  [|]  /  )",
+			R"(             \ \|[=\_____/   )",
+			R"(              \/ /| /\ |\   )",
+			R"(                (  |  |  )   )",
+			R"(                |  |  | _|   )",
+			R"(               [___|  |___]   )"
+		},
+		{
+			R"(              __ _____ __        )",
+			R"(              \_| X X |_/        )",
+			R"(      ___    ___| ___ |___       )",
+			R"(      | |  // .  \___// . \      )",
+			R"(      | |  |\___/ . . \___/\     )",
+			R"(      |_| /  | |. . . .||  |     )",
+			R"(     /   \___/ |. . . .||  |     )",
+			R"(     \___/      \ . . //  /      )",
+			R"(      | |       |[=X=]/__/__     )",
+			R"(     / # \    ___/| | -   - |    )",
+			R"(    |  #  |  (   ___|  {*}  |__  )",
+			R"(    |  #  |  |  |   \  [|]  /  | )",
+			R"(     \___/  [___|    \_____/ |_| )"
+		}
+	)
+	{
+	}
+};
+
+class mago_nero : public nemico
+{
+public:
+	mago_nero() : nemico
+	(
+		"Mago nero",
+		80,
+		35,
+		35,
+		20,
+		{
+			R"(                 /\              )",
+			R"(                /  \             )",
+			R"(              _/____\_           )",
+			R"(               |\  /|            )",
+			R"(      |     ____\--/____         )",
+			R"(      |    /    \\//    \        )",
+			R"(     _|___/      \/     |        )",
+			R"(     \_\    /|   ||     |        )",
+			R"(        \__/ |   ||   | |        )",
+			R"(             |   ||   |_|        )",
+			R"(             |   ||   |/         )",
+			R"(             |   /\   |          )",
+			R"(            /___/  \___\         )"
+		},
+		{
+			R"(                 /\              )",
+			R"(        |       /  \             )",
+			R"(        |     _/____\_           )",
+			R"(        |      |\  /|            )",
+			R"(        /\  ____\--/____         )",
+			R"(        \/\/    \\//    \        )",
+			R"(        /        \/     |        )",
+			R"(         \  /|   ||     |        )",
+			R"(          \/ |   ||   | |        )",
+			R"(             |   ||   |_|        )",
+			R"(             |   ||   |/         )",
+			R"(             |   /\   |          )",
+			R"(            /___/  \___\         )"
+		},
+		{
+			R"(                 /\              )",
+			R"(                /  \             )",
+			R"(              _/____\_           )",
+			R"(               |X  X|            )",
+			R"(            ____\--/____         )",
+			R"(           /    \\//    \        )",
+			R"(          /      \/     |        )",
+			R"(         /   |   ||   | |        )",
+			R"(    ____/\  /|   ||   | |        )",
+			R"(        \/\/ |   ||   |/         )",
+			R"(             |   ||   |          )",
+			R"(             |   /\   |          )",
+			R"(            /___/  \___\         )"
+		}
+	)
+	{
+	}
+};
+
+class barbaro : public nemico
+{
+public:
+	barbaro() : nemico
+	(
+		"barbaro",
+		90,
+		30,
+		70,
+		30,
+		{
+			R"(               |\/\/\/|          )",
+			R"(               | \  / |          )",
+			R"(               |  __  |          )",
+			R"(             ___\____/___        )",
+			R"(            /\__/    \__/\       )",
+			R"(           / /|  °  °  | |       )",
+			R"(          / / | °    ° | |       )",
+			R"(         /_/  \  °  °  /_|       )",
+			R"(      __/_/__ [/|\##/|\]_|       )",
+			R"(       | | |   |  /\  |          )",
+			R"(       | | |   ( |  | )          )",
+			R"(       | | |   | |  | |          )",
+			R"(       | | |  [__|  |__]         )"
+		},
+		{
+			R"(    |\         |\/\/\/|          )",
+			R"(    | \        | \  / |          )",
+			R"(     \ \       |  __  |          )",
+			R"(      \ \/   ___\____/___        )",
+			R"(       \/\  /\__/    \__/\       )",
+			R"(       /\/\/ /|  °  °  | |       )",
+			R"(         \  / | °    ° | |       )",
+			R"(          \/  \  °  °  /_|       )",
+			R"(              [/|\##/|\]_|       )",
+			R"(               |  /\  |          )",
+			R"(               ( |  | )          )",
+			R"(               | |  | |          )",
+			R"(              [__|  |__]         )"
+		},
+		{
+			R"(                                 )",
+			R"(               |\/\/\/|          )",
+			R"(               | X  X |          )",
+			R"(               |  __  |          )",
+			R"(             ___\____/___        )",
+			R"(            /\__/    \__/\       )",
+			R"(          |--------\°  | |       )",
+			R"(       ---|-------| ° | |       )",
+			R"(          |--------/°  /_|       )",
+			R"(            |_[/|\##/|\]_|       )",
+			R"(               |  /\  | __       )",
+			R"(               | |/ | |/  |      )",
+			R"(               (__/|(__/|_|      )"
+		}
+	)
+	{
+	}
+};
+void player::turno(int& mob_vita, int danno_nemico, const nemico& mob, const player& gamer)
+{
+	cout << hp << " hp" << endl;
+	char scelta = _getch();
+	while (scelta != '1' && scelta != '2')
+	{
+		cout << "inserire valore valido" << endl;
+		cin >> scelta;
+	}
+	if (scelta == '1')
+	{
+		drawmach(mob.getSprite(), gamer.getSpriteAttk(), mob, gamer);
+		attacchi(mob_vita);
+		wait(1500);
+	}
+	else
+		cura(danno_nemico);
+}
+void crea_mob(vector<nemico*>& mob)
+{
+	int mob_type;
+	mob_type = rand() % 3;
+	switch (mob_type)
+	{
+
+
+	case 0:
+		mob.push_back(new orco());
+		break;
+
+	case 1:
+		mob.push_back(new mago_nero());
+		break;
+
+	case 2:
+		mob.push_back(new barbaro());
+		break;
+	}
+}
+
+bool prima(vector<nemico*> mob, player giocatore, int index)
+{
+	bool primo;
+	if (mob[index]->getspeed() < giocatore.getspeed())
+		primo = true;
+	else
+		primo = false;
+	return primo;
+}
+
+void drawmach(vector<string>spritenem, vector<string>spriteplay, const nemico& mob, const player& gamer)
+{
+	cout << "\033[2J\033[1;1H";
+	cout << "\t\t\t\t\t\t\t\t\t\t\t" << mob.getclasse() << ": " << mob.getvita() << " hp " << endl;
+	for (const string& linea : spritenem)
+	{
+		cout << "\t\t\t\t\t\t\t\t\t\t" << linea << endl;
+	}
+	cout << endl << endl;
+	cout << "\t" << gamer.getclasse() << ": " << gamer.getvita() << " hp " << endl;
+	for (const string& linea : spriteplay)
+	{
+		cout << linea << endl;
+	}
+	cout <<"premere"<<endl << "| 1 attacchi | 2 ti curi |" << endl;
+}
+
+void combattimento(vector<nemico*>& mob, player& giocatore, int index, int& kill)
+{
+	cout << "\033[2J\033[1;1H";
+	this_thread::sleep_for(chrono::milliseconds(100));
+	cout << "e comparso un... " << mob[index]->getclasse();
+	this_thread::sleep_for(chrono::milliseconds(1200));
+	drawmach(mob[index]->getSprite(), giocatore.getSprite(), *mob[index], giocatore);
+	while (true)
+	{
+		drawmach(mob[index]->getSprite(), giocatore.getSprite(), *mob[index], giocatore);
+		this_thread::sleep_for(chrono::milliseconds(1000));
+		if (prima(mob, giocatore, index))
+		{
+			giocatore.turno(mob[index]->getvita(), mob[index]->getdanno(), *mob[index],giocatore);
+			if (mob[index]->getvita() > 0)
+			{
+				drawmach(mob[index]->getSpriteAttk(), giocatore.getSprite(), *mob[index], giocatore);
+				mob[index]->attacca(giocatore.getvita());
+			}
+		}
+		else
+		{
+			drawmach(mob[index]->getSpriteAttk(), giocatore.getSprite(), *mob[index], giocatore);
+			mob[index]->attacca(giocatore.getvita());
+			this_thread::sleep_for(chrono::milliseconds(1500));
+			if (giocatore.getvita() > 0)
+			{
+				giocatore.turno(mob[index]->getvita(), mob[index]->getdanno(), *mob[index],giocatore);
+			}
+		}
+		if (mob[index]->getvita() <= 0)
+		{
+			drawmach(mob[index]->getSpriteKill(),giocatore.getSprite(),*mob[index],giocatore);
+			delete mob[index];
+			mob.erase(mob.begin() + index);
+			kill += 1;
+			this_thread::sleep_for(chrono::milliseconds(1500));
+			break;
+		}
+		this_thread::sleep_for(chrono::milliseconds(1500));
+		if (giocatore.getvita() <= 0)
+		{
+			drawmach(mob[index]->getSprite(), giocatore.getSpriteKill(), *mob[index], giocatore);
+			break;
+		}
+	}
+
+}
+
+void cambiamappa(player& gamer, vector<maps*>& mondo)
+{
+	int y = gamer.getposy();
+	int x = gamer.getposx();
+	int ymax = mondo[gamer.getmap()]->getmapymax() - 1;
+	int xmax = mondo[gamer.getmap()]->getmapxmax() - 1;
+
+	if (gamer.getmap() == 0)
+	{
+		if (x >= xmax)  
+		{
+			gamer.getmap() = 1;
+			gamer.getposx() = 1;  
+		}
+		else if (y <= 0)  
+		{
+			gamer.getmap() = 2;
+			gamer.getposy() = ymax-1;
+		}
+	}
+	else if (gamer.getmap() == 1)
+	{
+		if (x <= 0)  
+		{
+			gamer.getmap() = 0;
+			gamer.getposx() = xmax - 1;
+		}
+	}
+	else if (gamer.getmap() == 2)
+	{
+		if (y >= ymax)  
+		{
+			gamer.getmap() = 0;
+			gamer.getposy() = 1;
+		}
+	}
+}
+
+int main()
+{
+	srand(time(NULL));
+	player you;
+	vector<nemico*>mob;
+	vector<maps*>mondo;
+	mondo.push_back(new map0());
+	mondo.push_back(new map1());
+	mondo.push_back(new map2());
+	char input;
+	int kill = 0;
+	int nmob = rand() % 8;
+	you.setName();
+	you.choose_classe();
+	int mappaxmax=mondo[you.getmap()]->getmapxmax();
+	int mappaymax = mondo[you.getmap()]->getmapymax();
+	for (int i = 0; i <= nmob; i++)
+	{
+		crea_mob(mob);
+	}
+	do { you.pos_play1(mappaymax, mappaxmax,mondo); } while (mondo[you.getmap()]->gettile(you.getposy(),you.getposx()) == '#');
+	//pos nemico
+	for (int i = 0; i < mob.size(); i++)
+	{
+		do { mob[i]->pos_nemico1(mondo); } while (mondo[mob[i]->getword()]->gettile(mob[i]->getposny(),mob[i]->getposnx()) == '#' ||  //controlla pos nemico diversa da muri
+			(you.getmap() == mob[i]->getword() && you.getposy() == mob[i]->getposny() && you.getposx() == mob[i]->getposnx()));//controlla pos nemico diversa da player
+
+	}
+	while (true)
+	{
+		int mappa=you.getmap();
+		cout << "\033[2J\033[1;1H";
+		cout << you.getname() << endl
+			<< you.getclasse() << endl
+			<< you.getvita() << " hp" << endl
+			<< "uccisioni: " << kill << endl
+			<< "mostri rimasti : " << mob.size() << endl << endl << endl;
+		for (int y = 0; y < mondo[you.getmap()]->getmapymax();y++)
+		{
+			for (int x = 0; x < mondo[you.getmap()]->getmapxmax(); x++)
+			{
+				if (y == you.getposy() && x == you.getposx())
+				{
+					cout << 'p';
+				}
+				else
+				{
+					bool mobtrovato = false;
+					for (int i = 0; i < mob.size(); i++)
+					{
+						if (you.getmap() == mob[i]->getword() && y == mob[i]->getposny() && x == mob[i]->getposnx())
+						{
+							cout << 'm';
+							mobtrovato = true;
+							break;
+						}
+					}
+					if (!mobtrovato)
+					{
+						cout << mondo[you.getmap()]->gettile(y, x);
+					}
+				}
+			}
+			cout << endl;
+		}
+		char input = _getch();
+		int newposy = you.getposy();
+		int newposx = you.getposx();
+		if (input == 'w')
+			newposy--;
+		if (input == 'a')
+			newposx--;
+		if (input == 's')
+			newposy++;
+		if (input == 'd')
+			newposx++;
+		if (mondo[you.getmap()]->gettile(newposy,newposx) != '#')
+		{
+			for (int i = 0; i < mob.size(); i++)
+			{
+				int ym = mob[i]->getposny();
+				int xm = mob[i]->getposnx();
+				if (you.getmap()==mob[i]->getword() && newposy == ym && newposx == xm)
+				{
+					combattimento(mob, you, i, kill);
+					break;
+				}
+				
+			}
+			if (you.getvita() > 0)
+			{
+				you.getposy() = newposy;
+				you.getposx() = newposx;
+				cambiamappa(you, mondo);
+			}
+			else
+				break;
+		}
+		if (you.getvita() <= 0)
+			break;
+		this_thread::sleep_for(chrono::milliseconds(300));
+		if (mob.size() == 0)
+		{
+			nmob = rand() % 8;
+			for (int i = 0; i <= nmob; i++)
+			{
+				crea_mob(mob);
+			}
+			for (int i = 0; i < mob.size(); i++)
+			{
+				do { mob[i]->pos_nemico1(mondo); }
+				while (mondo[mob[i]->getword()]->gettile(mob[i]->getposny(),mob[i]->getposnx()) == '#' ||  //controlla pos nemico diversa da muri
+					  (you.getmap()==mob[i]->getword() && you.getposy() == mob[i]->getposny() && you.getposx() == mob[i]->getposnx()));//controlla pos nemico diversa da player
+
+			}
+		}
+	}
+	cout << "game over";
+	cin.ignore();
+	cin.get();
+	return 0;
+}
